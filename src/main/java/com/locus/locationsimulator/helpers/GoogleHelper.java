@@ -1,18 +1,19 @@
 package com.locus.locationsimulator.helpers;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import com.google.maps.DirectionsApi;
 import com.google.maps.GeoApiContext;
+import com.google.maps.errors.ApiException;
 import com.google.maps.model.DirectionsResult;
-import com.locus.locationsimulator.model.entries.Location;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
+import com.google.maps.model.DirectionsStep;
+import com.google.maps.model.LatLng;
+import com.locus.locationsimulator.model.entries.Step;
+import com.locus.locationsimulator.model.exceptions.GoogleException;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -20,39 +21,41 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class GoogleHelper {
 
-    @Autowired
-    private RestTemplate restTemplate;
+    private final GeoApiContext geoApiContext;
 
-    @Value("${google.url}")
-    private String url;
-
-    @Value("${key}")
-    private String key;
-
-    @Autowired
-    private GeoApiContext geoApiContext;
-
-    public List<Location> getPathPoints(Location source, Location destination) {
-
-        restTemplate.exchange(formReqUrl(source, destination), HttpMethod.GET, null, String.class);
-        return null;
+    public GoogleHelper(){
+        this.geoApiContext = new GeoApiContext.Builder().apiKey("AIzaSyAEQvKUVouPDENLkQlCF6AAap1Ze-6zMos").connectTimeout(1, TimeUnit.SECONDS).maxRetries(3).build();
     }
 
-    private String formReqUrl(Location source, Location destination) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url).queryParam("origin", "")
-                .queryParam("destination", "").queryParam("key", key);
-        return builder.toUriString();
-    }
-
-    public DirectionsResult getDirections(Location source, Location destination) {
-        DirectionsResult result = null;
+    public List<Step> getSteps(LatLng source, LatLng destination) throws GoogleException {
+        System.out.println(geoApiContext.toString());
         try {
-            result = DirectionsApi.getDirections(geoApiContext, source.getCoordinates(), destination.getCoordinates())
-                    .await();
-        } catch (Exception e) {
-            e.printStackTrace(); 
+            DirectionsResult result = DirectionsApi.getDirections(geoApiContext, source.toUrlValue(), destination.toUrlValue()).await();
+            validateResponse(result);
+            log.info(result.toString());
+            return getSteps(result);
+        } catch (ApiException | InterruptedException | IOException e) {
+            log.error(e.getMessage());
+            throw new GoogleException("Couldn't get response from google");
         }
-        return result;
+    }
+
+    private List<Step> getSteps(DirectionsResult result){
+        DirectionsStep[] directionsSteps = result.routes[0].legs[0].steps;
+        List<Step> steps = new ArrayList<>();
+        for(DirectionsStep directionsStep : directionsSteps){
+            Step step = new Step();
+            step.setDistInMet(directionsStep.distance.inMeters);
+            step.setStart(directionsStep.startLocation);
+            step.setEnd(directionsStep.endLocation);
+            step.setPolyLine(directionsStep.polyline.decodePath());
+            steps.add(step);
+        }
+        return steps;
+    }
+
+    private void validateResponse(DirectionsResult result){
+        
     }
 
 }

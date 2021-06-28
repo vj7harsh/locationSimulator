@@ -7,12 +7,12 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Location {
-    private String longitude;
     private String latitude;
+    private String longitude;
 
     public String getCoordinates(){
-        return String.format("{},{}", longitude, latitude);
+        return String.format("{},{}", latitude, longitude);
     }
 }
