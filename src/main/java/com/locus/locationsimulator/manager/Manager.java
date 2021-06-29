@@ -20,33 +20,30 @@ public class Manager {
     private static final double contiguosDist = 50; // in metres
     
     public List<LatLng> getPathPoints(LatLng source, LatLng destination) throws GoogleException{
-        List<LatLng> pointsList = new ArrayList<>();
         List<LatLng> polylinePoints = googleHelper.getPolylinePoints(source, destination);
-        addEquidistPointsInCurrStep(polylinePoints, pointsList);
-        for(int j=0; j<pointsList.size(); j++){
-            System.out.println(pointsList.get(j).lat + "," + pointsList.get(j).lng + ",");
-        }
-        return pointsList;
+        return getEquiDistPointsAlongPath(polylinePoints);
     }
 
-    private void addEquidistPointsInCurrStep(List<LatLng> pointsInStep, List<LatLng> pointsList){
-        LatLng currPoint = pointsInStep.get(0), nextPoint;
-        pointsList.add(currPoint);
+    private List<LatLng> getEquiDistPointsAlongPath(List<LatLng> pointsOnPolyLine){
+        List<LatLng> equiDistPoints = new ArrayList<>();
+        LatLng currPoint = pointsOnPolyLine.get(0), nextPoint;
+        equiDistPoints.add(currPoint);
         double distanceToNextPoint, distanceCovered = 0;
-        int i = 1;
-        while(i<pointsInStep.size()){
-            nextPoint = pointsInStep.get(i);
+        int nextIndexInPolyLine = 1;
+        while(nextIndexInPolyLine<pointsOnPolyLine.size()){
+            nextPoint = pointsOnPolyLine.get(nextIndexInPolyLine);
             distanceToNextPoint = GeometricUtil.distBtwInMts(currPoint, nextPoint);
             if(distanceCovered + distanceToNextPoint < contiguosDist){
-                i++;
+                nextIndexInPolyLine++;
                 distanceCovered += distanceToNextPoint;
                 currPoint = nextPoint;
             } else {
                 currPoint = GeometricUtil.getInterpolatedPoint(currPoint, contiguosDist - distanceCovered, nextPoint);
-                pointsList.add(currPoint);
+                equiDistPoints.add(currPoint);
                 distanceCovered = 0;
             }
         }
+        return equiDistPoints;
     }
 
 }
