@@ -10,8 +10,8 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Step {
-    private LatLng start;
-    private LatLng end;
-    private Long distInMet;
-    private List<LatLng> polyLine;
+    private LatLng stepStrt;
+    private LatLng stepEnd;
+    private int stepDist;
+    private List<LatLng> pointsOnPolyLine;
 }
