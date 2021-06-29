@@ -28,9 +28,8 @@ public class Controller {
             List<LatLng> locations = manager.getPathPoints(request.getOrigin(), request.getDestination());
             return ResponseEntity.ok().body(new ApiResponse(locations));
         } catch (GoogleException e) {
-            e.printStackTrace();
             return ResponseEntity.badRequest().build();
-        }
+        } 
     }
 
 }
